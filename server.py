@@ -300,7 +300,7 @@ async function searchWeb(query, cfg, n){
   n=n||3;var results=[];
   if(cfg.tavily){
     try{
-      var ctrl=new AbortController();var to=setTimeout(function(){ctrl.abort();},8000);
+      var ctrl=new AbortController();var to=setTimeout(function(){ctrl.abort();},12000);
       var r=await fetch('https://api.tavily.com/search',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.tavily},body:JSON.stringify({query:query,search_depth:'basic',include_answer:true,max_results:n}),signal:ctrl.signal});
       clearTimeout(to);
       if(r.ok){var d=await r.json();if(d.answer)results.push('[Tavily总结] '+d.answer);if(d.results){d.results.forEach(function(x){results.push(x.title+': '+x.content.slice(0,300));});}}
@@ -357,7 +357,7 @@ async function queryData(t){
     var queries=[];
     // 路1：验证DB学校（冲稳保各5所，搜最新分数线）
     var dbSchools=[];
-    if(j&&j.chong)for(var i=0;i<Math.min(5,j.chong.length);i++)dbSchools.push(j.chong[i].school);
+    if(j&&j.chong)for(var i=0;i<Math.min(3,j.chong.length);i++)dbSchools.push(j.chong[i].school);
     if(j&&j.wen)for(var i=0;i<Math.min(5,j.wen.length);i++)dbSchools.push(j.wen[i].school);
     if(j&&j.bao)for(var i=0;i<Math.min(5,j.bao.length);i++)dbSchools.push(j.bao[i].school);
     for(var i=0;i<dbSchools.length;i++){
@@ -381,7 +381,7 @@ async function queryData(t){
     for(var i=0;i<queries.length;i++){if(!seenQ[queries[i]]){seenQ[queries[i]]=1;finalQ.push(queries[i]);}}
     // 分3批并行搜索（每批5个同时发，避免限流）
     var allWeb=[];
-    for(var b=0;b<finalQ.length;b+=5){
+    for(var b=0;b<finalQ.length;b+=3){
       var batch=finalQ.slice(b,b+5);
       var tasks=[];for(var i=0;i<batch.length;i++){tasks.push(searchWeb(batch[i],cfg,2));}
       try{var results=await Promise.all(tasks);for(var i=0;i<results.length;i++){allWeb=allWeb.concat(results[i]);}}catch(e){console.warn('批次搜索失败:',e.message);}
