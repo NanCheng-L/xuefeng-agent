@@ -300,7 +300,9 @@ async function searchWeb(query, cfg, n){
   n=n||3;var results=[];
   if(cfg.tavily){
     try{
-      var r=await fetch('https://api.tavily.com/search',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.tavily},body:JSON.stringify({query:query,search_depth:'basic',include_answer:true,max_results:n})});
+      var ctrl=new AbortController();var to=setTimeout(function(){ctrl.abort();},8000);
+      var r=await fetch('https://api.tavily.com/search',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.tavily},body:JSON.stringify({query:query,search_depth:'basic',include_answer:true,max_results:n}),signal:ctrl.signal});
+      clearTimeout(to);
       if(r.ok){var d=await r.json();if(d.answer)results.push('[Tavily总结] '+d.answer);if(d.results){d.results.forEach(function(x){results.push(x.title+': '+x.content.slice(0,300));});}}
     }catch(e){console.warn('Tavily failed:',e.message);}
   }
