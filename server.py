@@ -89,7 +89,7 @@ class Handler(BaseHTTPRequestHandler):
                 if rank > 0:
                     chong = [{'school':r[0],'major':r[1],'score':r[2],'rank':r[3],'year':r[4]} for r in
                         conn.execute(f"SELECT school_name,major_name,score,rank,year FROM admission WHERE {base} AND rank>0 AND rank<? AND rank>=? ORDER BY rank ASC LIMIT 50",
-                        bp+[rank, max(1,int(rank*0.85))]).fetchall()]
+                        bp+[rank, max(1,int(rank*0.90))]).fetchall()]
                     wen = [{'school':r[0],'major':r[1],'score':r[2],'rank':r[3],'year':r[4]} for r in
                         conn.execute(f"SELECT school_name,major_name,score,rank,year FROM admission WHERE {base} AND rank>0 AND rank>=? AND rank<=? ORDER BY rank ASC LIMIT 50",
                         bp+[rank, int(rank*1.3)]).fetchall()]
@@ -101,7 +101,7 @@ class Handler(BaseHTTPRequestHandler):
                 if not (chong or wen or bao) and keyword:
                     chong = [{'school':r[0],'major':r[1],'score':r[2],'rank':r[3],'year':r[4]} for r in
                         conn.execute(f"SELECT school_name,major_name,score,rank,year FROM admission WHERE province LIKE ? AND rank>0 AND rank<? AND rank>=? ORDER BY rank ASC LIMIT 50",
-                        [f'%{prov}%', rank, max(1,int(rank*0.85))]).fetchall()]
+                        [f'%{prov}%', rank, max(1,int(rank*0.90))]).fetchall()]
                     wen = [{'school':r[0],'major':r[1],'score':r[2],'rank':r[3],'year':r[4]} for r in
                         conn.execute(f"SELECT school_name,major_name,score,rank,year FROM admission WHERE province LIKE ? AND rank>0 AND rank>=? AND rank<=? ORDER BY rank ASC LIMIT 50",
                         [f'%{prov}%', rank, int(rank*1.3)]).fetchall()]
@@ -114,10 +114,10 @@ class Handler(BaseHTTPRequestHandler):
                     # First try with keyword
                     chong = [{'school':r[0],'major':r[1],'score':r[2],'rank':r[3],'year':r[4]} for r in
                         conn.execute(f"SELECT school_name,major_name,score,rank,year FROM admission WHERE {base} AND score>? AND score<=? ORDER BY score DESC LIMIT 80",
-                        bp+[score, score+35]).fetchall()]
+                        bp+[score, score+25]).fetchall()]
                     wen = [{'school':r[0],'major':r[1],'score':r[2],'rank':r[3],'year':r[4]} for r in
                         conn.execute(f"SELECT school_name,major_name,score,rank,year FROM admission WHERE {base} AND score>=? AND score<=? ORDER BY score ASC LIMIT 50",
-                        bp+[score-25, score+35]).fetchall()]
+                        bp+[score-25, score+25]).fetchall()]
                     bao = [{'school':r[0],'major':r[1],'score':r[2],'rank':r[3],'year':r[4]} for r in
                         conn.execute(f"SELECT school_name,major_name,score,rank,year FROM admission WHERE {base} AND score>=? AND score<? ORDER BY score ASC LIMIT 50",
                         bp+[score-50, score-25]).fetchall()]
