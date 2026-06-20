@@ -278,7 +278,8 @@ function extractInfo(t){
   info.province=bestProv;
   var rm=t.match(/(\d{4,7})\s*[位名]/)||t.match(/[位名]次?\s*(\d{4,7})/)||t.match(/排[名行]\s*(\d{4,7})/);
   if(rm){info.rank=parseInt(rm[1])||parseInt(rm[2])||0;}
-  var sm=t.match(/(\d{3})\s*分/)||t.match(/分数\s*(\d{3})/)||t.match(/(\d{3})\s*[分份]/);if(sm){info.score=parseInt(sm[1]);}  // 专业：过滤掉否定句式中的词（不学X/不接受X/不读X/不选X/别推荐X）
+  var sm=t.match(/(\d{3})\s*分/)||t.match(/分数\s*(\d{3})/)||t.match(/(\d{3})\s*[分份]/);if(sm){info.score=parseInt(sm[1]);}
+  // 专业：过滤掉否定句式中的词（不学X/不接受X/不读X/不选X/别推荐X）
   var majors=['计算机','软件','电气','机械','自动化','土木','临床','口腔','法学','会计','金融','物联网','人工智能','大数据','电子','通信','材料','化工','生物','医学','护理','师范','英语','日语','新闻','设计','美术','音乐','体育','汉语言','思政','马克思','数学','化学','地理','航空航天','能源','交通','环境'];
   var neg=t.match(/(?:不学|不接受|不读|不选|别推荐|别学|拒绝|排斥|不想学|不考虑).*?(?:[。，,;\n]|$)/g)||[];
   // 也排除描述性用语：XX一般/不好/不行/差/弱/烂，XX好/擅长这类不是专业偏好
@@ -319,14 +320,40 @@ async function queryData(t){
   var cfg=getCfg();
   var info={province:'',rank:0,score:0,majors:[],schools:[],keywords:[]};
 
-  // 直接正则提取（不用AI，避免API卡住）
+  // 第1步：AI优先提取（理解"一万三""川籍"等复杂语境）
+  if(cfg.key){
+    try{
+      var xp='从用户的高考咨询消息中提取信息。注意理解口语：\n';
+      xp+='- "一万三左右""1万3"→13000，"省排13420"→13420\n';
+      xp+='- "我是四川的""川籍"→四川，不要说\"上海\"在\"江苏\"前面就选上海\n';
+      xp+='- "物化生"→物理类，"史政地"→历史类\n';
+      xp+='- "想学自动化机械电气"→majors:["自动化","机械","电气"]\n';
+      xp+='- "不学计算机""不接受师范"→不要放进majors\n';
+      xp+='- "不想去新疆云贵"→region_avoid:["新疆","云南","贵州"]\n';
+      xp+='返回JSON:{"province":"","rank":0,"score":0,"subject":"","majors":[],"schools":[],"region_pref":[],"region_avoid":[],"keywords":[]}\n';
+      xp+='keywords填联网搜索关键词(如"四川 自动化 录取位次 2025")\n只返回JSON。\n用户消息: '+t;
+      var er=await fetch(cfg.url.replace(/\/+$/,'')+'/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+cfg.key},body:JSON.stringify({model:cfg.model||'deepseek-chat',messages:[{role:'user',content:xp}],temperature:0,max_tokens:250})});
+      if(er.ok){
+        var ed=await er.json();var raw=ed.choices[0].message.content.replace(/```/g,'').replace(/json/g,'').trim();
+        var ai=JSON.parse(raw);
+        info.province=ai.province||'';
+        info.rank=parseInt(ai.rank)||0;
+        info.score=parseInt(ai.score)||0;
+        info.majors=ai.majors||[];
+        info.schools=ai.schools||[];
+        info.keywords=ai.keywords||[];
+        console.log('AI提取:',JSON.stringify(info));
+      }
+    }catch(e){console.warn('AI提取失败，降级正则:',e.message);}
+  }
+  // 第2步：正则兜底（填补AI没提取到的字段）
   var re=extractInfo(t);
-  info.province=re.province||'';
-  info.rank=re.rank||0;
-  info.score=re.score||0;
-  info.majors=re.major?[re.major]:[];
-  info.schools=re.school?[re.school]:[];
-  console.log('正则提取:',JSON.stringify(info));
+  if(!info.province&&re.province)info.province=re.province;
+  if(!info.rank&&re.rank)info.rank=re.rank;
+  if(!info.score&&re.score)info.score=re.score;
+  if(!info.majors.length&&re.major)info.majors=[re.major];
+  if(!info.schools.length&&re.school)info.schools=[re.school];
+  console.log('最终提取:',JSON.stringify(info));
 
   console.log('DEBUG queryData params:',JSON.stringify({province:info.province,rank:info.rank,score:info.score,majors:info.majors}));
   var dbSkip = !info.province||(!info.rank&&!info.score); if(dbSkip){console.log("缺少关键信息，跳过DB但保留联网搜索");}
