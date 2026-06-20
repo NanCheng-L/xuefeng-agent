@@ -134,13 +134,15 @@
 ## 项目结构
 
 ```
-├── server.py              # Web 服务器 + 完整 HTML 页面（主程序，单文件）
+├── server.py              # Web 服务器 + 完整 HTML 页面（主程序）
 ├── admission_clean.db.gz  # 录取数据库（首次运行自动解压）
 ├── 启动.bat               # Windows 一键启动
-├── rebuild_db.py          # 数据库重建脚本（从原始 Excel/PDF 构建）
+├── 打开我.html             # 浏览器入口（自动检测服务器状态）
+├── rebuild_db.py          # 数据库重建脚本（从原始考试院 Excel 构建）
+├── clean_data.py          # 数据库清洗脚本
 ├── 小白教程-零基础也能用.md
-├── agent.py               # CLI 聊天版本（备用）
-└── knowledge_base.md      # 志愿填报知识库
+├── 提问模板-这样问最准.md
+└── 更新说明.md
 ```
 
 ---
